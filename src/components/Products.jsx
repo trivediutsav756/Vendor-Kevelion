@@ -54,7 +54,7 @@ const Products = ({ user }) => {
   });
   // Pricing Tiers State for UI - now with strings for empty defaults
   const [pricingTiers, setPricingTiers] = useState([]);
-  const BASE_URL = "https://kevelionapi.kevelion.com";
+  const BASE_URL = "https://adminapi.kevelion.com";
   const SELLER_ID = user?.id || (localStorage.getItem('retaillian_user') ? JSON.parse(localStorage.getItem('retaillian_user') || '{}').id : null);
   // ✅ HELPER TO UNESCAPE DOUBLE-QUOTED JSON STRINGS
   const unescapeJsonString = (str) => {

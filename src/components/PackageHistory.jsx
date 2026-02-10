@@ -6,7 +6,7 @@ const PackageHistory = ({ user }) => {
   const [loading, setLoading] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(new Date());
 
-  const API_BASE_URL = "https://kevelionapi.kevelion.com";
+  const API_BASE_URL = "https://adminapi.kevelion.com";
 
   // Fetch package history
   const fetchPackageHistory = async () => {

@@ -2,10 +2,10 @@
 import React, { useEffect, useState } from "react";
 import { FiImage } from "react-icons/fi";
 
-const API_BASE = "https://kevelionapi.kevelion.com";
+const API_BASE = "https://adminapi.kevelion.com";
 // IMPORTANT: use the same base where images are actually hosted.
 // If your API returns image paths like "/uploads/....", this should be the domain that serves them.
-const IMAGE_BASE = "https://kevelionapi.kevelion.com"; // <-- changed from rettalion.apxfarms.com
+const IMAGE_BASE = "https://adminapi.kevelion.com"; // <-- changed from rettalion.apxfarms.com
 
 const Subcategory = ({ user }) => {
   const [subcategories, setSubcategories] = useState([]);

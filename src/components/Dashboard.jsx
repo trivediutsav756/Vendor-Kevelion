@@ -92,7 +92,7 @@ const Dashboard = ({ user, onNavigate }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const API_BASE_URL = 'https://kevelionapi.kevelion.com';
+  const API_BASE_URL = 'https://adminapi.kevelion.com';
   const SELLER_ID = user?.id || localStorage.getItem('retaillian_user') ? JSON.parse(localStorage.getItem('retaillian_user') || '{}').id : null;
 
   // ✅ Authentication Check - Redirect if not logged in

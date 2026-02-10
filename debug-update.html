@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Live API Update</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        button { padding: 10px 20px; margin: 5px; }
+        .result { background: #f5f5f5; padding: 10px; margin: 10px 0; }
+        input { padding: 5px; margin: 5px; width: 200px; }
+    </style>
+</head>
+<body>
+    <h1>Debug Live API Update</h1>
+    
+    <div class="test-section">
+        <h3>Current Data</h3>
+        <button onclick="getCurrentData()">Get Current Data</button>
+        <div id="currentData" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Test Update</h3>
+        <input type="text" id="nameInput" placeholder="Enter new name" value="TestName123">
+        <input type="text" id="mobileInput" placeholder="Enter new mobile" value="9999999999">
+        <br>
+        <button onclick="testUpdate()">Test Update</button>
+        <div id="updateResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Verify Update</h3>
+        <button onclick="verifyUpdate()">Check if Data Changed</button>
+        <div id="verifyResult" class="result"></div>
+    </div>
+
+    <script>
+        const API_URL = 'http://rettalion.apxfarms.com/seller/6';
+        
+        async function getCurrentData() {
+            try {
+                const response = await fetch(API_URL);
+                const data = await response.text();
+                document.getElementById('currentData').innerHTML = `<pre>${data}</pre>`;
+            } catch (error) {
+                document.getElementById('currentData').innerHTML = `Error: ${error.message}`;
+            }
+        }
+        
+        async function testUpdate() {
+            const name = document.getElementById('nameInput').value;
+            const mobile = document.getElementById('mobileInput').value;
+            
+            const payload = {
+                name: name,
+                mobile: mobile
+            };
+            
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify(payload)
+                });
+                
+                const result = await response.text();
+                document.getElementById('updateResult').innerHTML = `
+                    <strong>Status:</strong> ${response.status}<br>
+                    <strong>Response:</strong> <pre>${result}</pre>
+                `;
+            } catch (error) {
+                document.getElementById('updateResult').innerHTML = `Error: ${error.message}`;
+            }
+        }
+        
+        async function verifyUpdate() {
+            try {
+                const response = await fetch(API_URL);
+                const data = await response.text();
+                document.getElementById('verifyResult').innerHTML = `<pre>${data}</pre>`;
+            } catch (error) {
+                document.getElementById('verifyResult').innerHTML = `Error: ${error.message}`;
+            }
+        }
+        
+        // Auto-load current data
+        getCurrentData();
+    </script>
+</body>
+</html>

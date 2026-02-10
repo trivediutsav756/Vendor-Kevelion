@@ -324,7 +324,7 @@ const ShippingModal = ({
 
 const OrderDashboard = ({ user }) => {
   const SELLER_ID = Number(user?.id || JSON.parse(localStorage.getItem('kevelion_user'))?.id || 6);
-  const API_BASE_URL = 'https://kevelionapi.kevelion.com';
+  const API_BASE_URL = 'https://adminapi.kevelion.com';
 
   const [orders, setOrders] = useState([]);
   const [filteredOrders, setFilteredOrders] = useState([]);

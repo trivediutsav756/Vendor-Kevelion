@@ -6,7 +6,7 @@ const Login = ({ onLogin }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const API_BASE_URL = 'https://kevelionapi.kevelion.com';
+  const API_BASE_URL = 'https://adminapi.kevelion.com';
 
   const handleSubmit = async (e) => {
     e.preventDefault();

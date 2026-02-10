@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { Toaster, toast } from "react-hot-toast";
 
-const API_BASE = "https://kevelionapi.kevelion.com";
+const API_BASE = "https://adminapi.kevelion.com";
 
 const COMPANY_TYPES = [
   "Proprietorship",
