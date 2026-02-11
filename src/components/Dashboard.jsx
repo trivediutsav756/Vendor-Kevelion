@@ -94,6 +94,7 @@ const Dashboard = ({ user, onNavigate }) => {
 
   const API_BASE_URL = 'https://adminapi.kevelion.com';
   const SELLER_ID = user?.id || localStorage.getItem('retaillian_user') ? JSON.parse(localStorage.getItem('retaillian_user') || '{}').id : null;
+  const isApproved = String(user?.approve_status || '').toLowerCase() === 'approved';
 
   // ✅ Authentication Check - Redirect if not logged in
   useEffect(() => {
@@ -296,8 +297,8 @@ const Dashboard = ({ user, onNavigate }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Categories */}
         <div 
-          className="bg-white p-6 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow cursor-pointer"
-          onClick={() => onNavigate?.('category')}
+          className={`bg-white p-6 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow ${isApproved ? 'cursor-pointer' : 'opacity-60 cursor-not-allowed'}`}
+          onClick={isApproved ? () => onNavigate?.('category') : undefined}
         >
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-lg font-semibold text-gray-700">Categories</h3>
@@ -319,8 +320,8 @@ const Dashboard = ({ user, onNavigate }) => {
 
         {/* Subcategories */}
         <div 
-          className="bg-white p-6 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow cursor-pointer"
-          onClick={() => onNavigate?.('subcategory')}
+          className={`bg-white p-6 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow ${isApproved ? 'cursor-pointer' : 'opacity-60 cursor-not-allowed'}`}
+          onClick={isApproved ? () => onNavigate?.('subcategory') : undefined}
         >
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-lg font-semibold text-gray-700">Subcategories</h3>
@@ -342,8 +343,8 @@ const Dashboard = ({ user, onNavigate }) => {
 
         {/* Products */}
         <div 
-          className="bg-white p-6 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow relative cursor-pointer"
-          onClick={() => onNavigate?.('products')}
+          className={`bg-white p-6 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow relative ${isApproved ? 'cursor-pointer' : 'opacity-60 cursor-not-allowed'}`}
+          onClick={isApproved ? () => onNavigate?.('products') : undefined}
         >
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-lg font-semibold text-gray-700">Products</h3>
@@ -373,8 +374,8 @@ const Dashboard = ({ user, onNavigate }) => {
 
         {/* Total Orders */}
         <div 
-          className="bg-white p-6 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow relative cursor-pointer"
-          onClick={() => onNavigate?.('ordermanagement')}
+          className={`bg-white p-6 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow relative ${isApproved ? 'cursor-pointer' : 'opacity-60 cursor-not-allowed'}`}
+          onClick={isApproved ? () => onNavigate?.('ordermanagement') : undefined}
         >
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-lg font-semibold text-gray-700">Total Orders</h3>
@@ -408,8 +409,8 @@ const Dashboard = ({ user, onNavigate }) => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* New Orders */}
           <div 
-            className="bg-white p-6 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow cursor-pointer border-l-4 border-blue-500"
-            onClick={() => onNavigate && onNavigate('ordermanagement')}
+            className={`bg-white p-6 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow border-l-4 border-blue-500 ${isApproved ? 'cursor-pointer' : 'opacity-60 cursor-not-allowed'}`}
+            onClick={isApproved ? () => onNavigate && onNavigate('ordermanagement') : undefined}
           >
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-lg font-semibold text-gray-700">New Orders</h3>
@@ -425,8 +426,8 @@ const Dashboard = ({ user, onNavigate }) => {
 
           {/* Pending Orders */}
           <div 
-            className="bg-white p-6 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow cursor-pointer border-l-4 border-yellow-500"
-            onClick={() => onNavigate && onNavigate('ordermanagement')}
+            className={`bg-white p-6 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow border-l-4 border-yellow-500 ${isApproved ? 'cursor-pointer' : 'opacity-60 cursor-not-allowed'}`}
+            onClick={isApproved ? () => onNavigate && onNavigate('ordermanagement') : undefined}
           >
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-lg font-semibold text-gray-700">Pending Orders</h3>
@@ -442,8 +443,8 @@ const Dashboard = ({ user, onNavigate }) => {
 
           {/* Shipped Orders */}
           <div 
-            className="bg-white p-6 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow cursor-pointer border-l-4 border-purple-500"
-            onClick={() => onNavigate && onNavigate('ordermanagement')}
+            className={`bg-white p-6 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow border-l-4 border-purple-500 ${isApproved ? 'cursor-pointer' : 'opacity-60 cursor-not-allowed'}`}
+            onClick={isApproved ? () => onNavigate && onNavigate('ordermanagement') : undefined}
           >
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-lg font-semibold text-gray-700">Shipped Orders</h3>
@@ -463,8 +464,8 @@ const Dashboard = ({ user, onNavigate }) => {
       {!loading && orderBreakdown.orderOrders + orderBreakdown.inquiryOrders > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div 
-            className="bg-white p-6 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow cursor-pointer"
-            onClick={() => onNavigate && onNavigate('ordermanagement')}
+            className={`bg-white p-6 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow ${isApproved ? 'cursor-pointer' : 'opacity-60 cursor-not-allowed'}`}
+            onClick={isApproved ? () => onNavigate && onNavigate('ordermanagement') : undefined}
           >
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-lg font-semibold text-gray-700">Orders</h3>
@@ -479,8 +480,8 @@ const Dashboard = ({ user, onNavigate }) => {
           </div>
 
           <div 
-            className="bg-white p-6 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow cursor-pointer"
-            onClick={() => onNavigate && onNavigate('ordermanagement')}
+            className={`bg-white p-6 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow ${isApproved ? 'cursor-pointer' : 'opacity-60 cursor-not-allowed'}`}
+            onClick={isApproved ? () => onNavigate && onNavigate('ordermanagement') : undefined}
           >
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-lg font-semibold text-gray-700">Inquiries</h3>

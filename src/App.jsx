@@ -14,6 +14,7 @@ function App() {
   const [activeSection, setActiveSection] = useState('dashboard');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
+  const API_BASE_URL = 'https://adminapi.kevelion.com';
 
   // Check authentication status on component mount
   useEffect(() => {
@@ -37,6 +38,77 @@ function App() {
     setIsAuthenticated(false);
     setUser(null);
   };
+
+  useEffect(() => {
+    if (!isAuthenticated || !user?.id) return;
+    let stopped = false;
+    const refreshSeller = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/sellers`);
+        let nextUser = null;
+        if (res.ok) {
+          const body = await res.json();
+          const arr = Array.isArray(body)
+            ? body
+            : Array.isArray(body?.data)
+            ? body.data
+            : Array.isArray(body?.sellers)
+            ? body.sellers
+            : [];
+          const matched = arr.find((s) => Number(s.id) === Number(user.id));
+          if (matched) {
+            nextUser = {
+              ...user,
+              ...matched,
+              id: user.id,
+              email: user.email || matched.email,
+              name: user.name || matched.name || user.email,
+            };
+          }
+        }
+        if (!nextUser) {
+          const res2 = await fetch(`${API_BASE_URL}/seller/${user.id}`);
+          if (res2.ok) {
+            const details = await res2.json();
+            nextUser = {
+              ...user,
+              ...details,
+              id: user.id,
+              email: user.email || details.email,
+              name: user.name || details.name || user.email,
+            };
+          }
+        }
+        if (!nextUser) return;
+        const prev = String(user.approve_status || '').toLowerCase();
+        const curr = String(nextUser.approve_status || '').toLowerCase();
+        if (prev !== curr) {
+          localStorage.setItem('retaillian_user', JSON.stringify(nextUser));
+          setUser(nextUser);
+        }
+      } catch {}
+    };
+    const immediate = () => refreshSeller();
+    immediate();
+    const onFocus = () => refreshSeller();
+    const onVisible = () => {
+      if (!document.hidden) refreshSeller();
+    };
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisible);
+
+    const isApproved = String(user?.approve_status || '').toLowerCase() === 'approved';
+    const pollInterval = isApproved ? 30000 : 1500;
+    const interval = setInterval(() => {
+      if (!stopped) refreshSeller();
+    }, pollInterval);
+    return () => {
+      stopped = true;
+      clearInterval(interval);
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [isAuthenticated, user?.id, user?.approve_status]);
 
   const renderContent = () => {
     switch (activeSection) {

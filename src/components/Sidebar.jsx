@@ -17,7 +17,8 @@ const Sidebar = ({ activeSection, onSectionChange, onLogout, user }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
-  const menuItems = [
+  const isApproved = String(user?.approve_status || '').toLowerCase() === 'approved';
+  const allMenuItems = [
     {
       id: 'dashboard',
       label: 'Dashboard',
@@ -44,6 +45,7 @@ const Sidebar = ({ activeSection, onSectionChange, onLogout, user }) => {
       icon: <FiShoppingBag className="text-xl" />,
     },
   ];
+  const menuItems = isApproved ? allMenuItems : allMenuItems.filter(i => i.id === 'dashboard');
 
   const toggleSidebar = () => {
     setIsCollapsed(!isCollapsed);
@@ -165,6 +167,16 @@ const Sidebar = ({ activeSection, onSectionChange, onLogout, user }) => {
               <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold shadow-md">
                 <FiUser className="text-lg" />
               </div>
+            </div>
+          )}
+
+          {!isCollapsed && (
+            <div className="mt-2 text-xs">
+              <span className={`inline-block px-2 py-1 rounded ${
+                isApproved ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+              }`}>
+                {isApproved ? 'Approved' : (String(user?.approve_status || 'Pending'))}
+              </span>
             </div>
           )}
 
