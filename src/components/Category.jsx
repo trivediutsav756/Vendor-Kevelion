@@ -1,13 +1,23 @@
-// components/Category.jsx
 import React, { useState, useEffect } from 'react';
-import { FiImage } from 'react-icons/fi';
+import { FiImage, FiChevronDown } from 'react-icons/fi';
 
 const Category = ({ user }) => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [subcategories, setSubcategories] = useState([]);
+  const [subLoading, setSubLoading] = useState(false);
+  const [subError, setSubError] = useState('');
+  const [expandedIds, setExpandedIds] = useState(new Set());
 
   const API_BASE_URL = 'https://adminapi.kevelion.com';
+
+  const getImageUrl = (image) => {
+    if (!image) return '';
+    if (typeof image === 'string' && image.startsWith('http')) return image;
+    const path = image.startsWith('/') ? image : `/${image}`;
+    return `${API_BASE_URL}${path}`;
+  };
 
   // Fetch all categories
   const fetchCategories = async () => {
@@ -37,8 +47,38 @@ const Category = ({ user }) => {
     }
   };
 
+  const fetchAllSubcategories = async () => {
+    setSubLoading(true);
+    setSubError('');
+    try {
+      const response = await fetch(`${API_BASE_URL}/subcategories`);
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      const data = await response.json();
+      setSubcategories(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setSubError(err.message || 'Failed to fetch subcategories');
+      setSubcategories([]);
+    } finally {
+      setSubLoading(false);
+    }
+  };
+
+  const toggleExpand = async (id) => {
+    const next = new Set(expandedIds);
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      next.add(id);
+      if (subcategories.length === 0 && !subLoading) {
+        await fetchAllSubcategories();
+      }
+    }
+    setExpandedIds(next);
+  };
+
   useEffect(() => {
     fetchCategories();
+    fetchAllSubcategories();
   }, []);
 
   return (
@@ -98,38 +138,94 @@ const Category = ({ user }) => {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {categories.map((category, index) => (
-                  <tr key={category.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {index + 1}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {category.id}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex justify-start">
-                        {category.image ? (
-                          <img 
-                            src={`${API_BASE_URL}${category.image}`} 
-                            alt={category.category_name}
-                            className="h-12 w-12 rounded-lg object-cover border"
-                            onError={(e) => {
-                              e.target.onerror = null;
-                              e.target.src = 'https://via.placeholder.com/48?text=No+Image';
-                            }}
+                  <>
+                    <tr key={category.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {index + 1}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {category.id}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex justify-start">
+                          {category.image ? (
+                            <img 
+                              src={`${API_BASE_URL}${category.image}`} 
+                              alt={category.category_name}
+                              className="h-12 w-12 rounded-lg object-cover border"
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = 'https://via.placeholder.com/48?text=No+Image';
+                              }}
+                            />
+                          ) : (
+                            <div className="h-12 w-12 rounded-lg bg-gray-100 flex items-center justify-center border">
+                              <FiImage className="text-gray-400 text-xl" />
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={() => toggleExpand(category.id)}
+                          className="flex items-center gap-2 text-sm font-medium text-gray-900"
+                        >
+                          <span>{category.category_name || 'N/A'}</span>
+                          <FiChevronDown
+                            className={`transition-transform ${expandedIds.has(category.id) ? 'rotate-180' : 'rotate-0'}`}
                           />
-                        ) : (
-                          <div className="h-12 w-12 rounded-lg bg-gray-100 flex items-center justify-center border">
-                            <FiImage className="text-gray-400 text-xl" />
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
-                        {category.category_name || 'N/A'}
-                      </div>
-                    </td>
-                  </tr>
+                        </button>
+                      </td>
+                    </tr>
+                    {expandedIds.has(category.id) && (
+                      <tr>
+                        <td className="px-6 py-4 bg-gray-50" colSpan={4}>
+                          {subError && (
+                            <div className="bg-red-100 border border-red-400 text-red-700 px-3 py-2 rounded mb-3 text-sm">
+                              {subError}
+                            </div>
+                          )}
+                          {subLoading ? (
+                            <div className="flex justify-center items-center py-6">
+                              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+                            </div>
+                          ) : (
+                            <div className="space-y-3">
+                              {subcategories
+                                .filter((s) => Number(s.category_id) === Number(category.id))
+                                .map((s) => {
+                                  const name = s.subcategory_name || s.name || 'Unnamed';
+                                  const imgUrl = getImageUrl(s.image);
+                                  return (
+                                    <div key={s.id} className="flex items-center gap-3 p-3 border rounded-lg bg-white">
+                                      {imgUrl ? (
+                                        <img
+                                          src={imgUrl}
+                                          alt={name}
+                                          className="h-12 w-12 rounded-lg object-cover border"
+                                          loading="lazy"
+                                          referrerPolicy="no-referrer"
+                                          onError={(e) => {
+                                            e.currentTarget.onerror = null;
+                                            e.currentTarget.src = 'https://via.placeholder.com/48?text=No+Image';
+                                          }}
+                                        />
+                                      ) : (
+                                        <div className="h-12 w-12 rounded-lg bg-gray-100 flex items-center justify-center border">
+                                          <FiImage className="text-gray-400 text-xl" />
+                                        </div>
+                                      )}
+                                      <div className="text-sm font-medium text-gray-900">{name}</div>
+                                    </div>
+                                  );
+                                })}
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                  </>
                 ))}
               </tbody>
             </table>

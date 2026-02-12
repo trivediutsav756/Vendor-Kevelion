@@ -44,6 +44,11 @@ const Sidebar = ({ activeSection, onSectionChange, onLogout, user }) => {
       label: 'Order Management',
       icon: <FiShoppingBag className="text-xl" />,
     },
+    {
+      id: 'stocks',
+      label: 'Stocks',
+      icon: <FiPackage className="text-xl" />,
+    },
   ];
   const menuItems = isApproved ? allMenuItems : allMenuItems.filter(i => i.id === 'dashboard');
 

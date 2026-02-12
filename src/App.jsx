@@ -9,6 +9,7 @@ import Subcategory from './components/Subcategory';
 import Products from './components/Products';
 import OrderDashboard from './components/OrderDashboard';
 import Login from './components/Login';
+import Stocks from './components/Stocks';
 
 function App() {
   const [activeSection, setActiveSection] = useState('dashboard');
@@ -126,6 +127,8 @@ function App() {
         return <Products user={user} />;
       case 'ordermanagement':
         return <OrderDashboard user={user} />;
+      case 'stocks':
+        return <Stocks user={user} />;
       default:
         return <Dashboard user={user} onNavigate={setActiveSection} />;
     }
