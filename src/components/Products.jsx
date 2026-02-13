@@ -47,10 +47,10 @@ const Products = ({ user }) => {
     cat_id: '',
     cat_sub_id: '',
     brand: '',
-    material: '',
     made_in: '',
     specification: '',
     warranty: '',
+    gst: '',
     seller_id: '',
     color_id: '',
     finish_id: '',
@@ -137,6 +137,66 @@ const Products = ({ user }) => {
   const [materialsList, setMaterialsList] = useState([]);
   const [finishesList, setFinishesList] = useState([]);
   const [countriesList, setCountriesList] = useState([]);
+  // Specifications Builder
+  const SPEC_UNIT_OPTIONS = {
+    Length: ['mm', 'cm', 'inch', 'feet'],
+    Width: ['mm', 'cm', 'inch', 'feet'],
+    Height: ['mm', 'cm', 'inch', 'feet'],
+    Diameter: ['mm', 'inch'],
+    Size: ['mm', 'inch', 'feet', 'NONE'],
+    Weight: ['gram', 'kg'],
+    Capacity: ['litre (L)', 'ml'],
+    Wattage: ['watt (W)'],
+    Voltage: ['volt (V)'],
+    Pressure: ['bar', 'psi'],
+    Speed: ['RPM'],
+    Custom_Field_1: ['NONE']
+  };
+  const SPEC_TEMPLATES = {
+    sanitary: ['Length', 'Width', 'Height', 'Size', 'Capacity', 'Weight', 'Custom_Field_1'],
+    cp_fittings: ['Length', 'Diameter', 'Size', 'Pressure', 'Weight', 'Custom_Field_1'],
+    electrical: ['Wattage', 'Voltage', 'Size', 'Weight', 'Speed', 'Custom_Field_1'],
+    hardware: ['Length', 'Width', 'Height', 'Size', 'Weight', 'Custom_Field_1'],
+    tools: ['Length', 'Size', 'Weight', 'Speed', 'Custom_Field_1'],
+    safety: ['Size', 'Weight', 'Custom_Field_1'],
+    other: ['Size', 'Weight', 'Custom_Field_1']
+  };
+  const [specCategory, setSpecCategory] = useState('');
+  const [specFields, setSpecFields] = useState({});
+  const initSpecFieldsForCategory = (categoryKey) => {
+    setSpecCategory(categoryKey);
+    const specs = SPEC_TEMPLATES[categoryKey] || [];
+    const initialized = {};
+    specs.forEach((name) => {
+      initialized[name] = { value: '', unit: (SPEC_UNIT_OPTIONS[name] && SPEC_UNIT_OPTIONS[name][0]) || 'NONE' };
+    });
+    setSpecFields(initialized);
+  };
+  const setSpecValue = (name, value) => {
+    setSpecFields((prev) => ({
+      ...prev,
+      [name]: { ...(prev[name] || {}), value }
+    }));
+  };
+  const setSpecUnit = (name, unit) => {
+    setSpecFields((prev) => ({
+      ...prev,
+      [name]: { ...(prev[name] || {}), unit }
+    }));
+  };
+  const serializeSpecifications = () => {
+    const specObj = {
+      category: specCategory || 'other',
+      specifications: {}
+    };
+    Object.entries(specFields || {}).forEach(([key, val]) => {
+      specObj.specifications[key] = {
+        value: String(val?.value ?? ''),
+        unit: String(val?.unit ?? 'NONE')
+      };
+    });
+    return JSON.stringify(specObj);
+  };
   useEffect(() => {
     const fetchList = async (url, setter) => {
       try {
@@ -735,11 +795,14 @@ const Products = ({ user }) => {
       formData.append('cat_id', parseInt(newProduct.cat_id));
       formData.append('cat_sub_id', parseInt(newProduct.cat_sub_id));
       formData.append('brand', newProduct.brand.trim());
-      formData.append('material', newProduct.material.trim());
       formData.append('made_in', newProduct.made_in.trim());
       formData.append('specification', newProduct.specification.trim());
       formData.append('warranty', newProduct.warranty.trim());
+      formData.append('gst', newProduct.gst === '' ? 0 : parseFloat(newProduct.gst));
       formData.append('seller_id', SELLER_ID);
+      if (specCategory && Object.values(specFields).some(f => (f?.value ?? '') !== '')) {
+        formData.append('specifications', serializeSpecifications());
+      }
       if (newProduct.color_id) formData.append('color_id', parseInt(newProduct.color_id));
       if (newProduct.finish_id) formData.append('finish_id', parseInt(newProduct.finish_id));
       if (newProduct.material_id) formData.append('material_id', parseInt(newProduct.material_id));
@@ -760,6 +823,38 @@ const Products = ({ user }) => {
       }
       const result = await response.json();
       if (response.ok) {
+        let newId = result?.data?.id || result?.insertId || null;
+        if (!newId) {
+          try {
+            const refreshed = await fetch(`${BASE_URL}/products/`);
+            if (refreshed.ok) {
+              const data = await refreshed.json();
+              const list = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
+              const found = list.find(p => p.sku?.toString() === newProduct.sku?.toString() && p.name === newProduct.name);
+              if (found) newId = found.id;
+            }
+          } catch {}
+        }
+        if (newId) {
+          try {
+            const patchData = new FormData();
+            if (newProduct.color_id) patchData.append('color_id', parseInt(newProduct.color_id));
+            if (newProduct.finish_id) patchData.append('finish_id', parseInt(newProduct.finish_id));
+            if (newProduct.material_id) patchData.append('material_id', parseInt(newProduct.material_id));
+            patchData.append('gst', newProduct.gst === '' ? 0 : parseFloat(newProduct.gst));
+            if (specCategory && Object.values(specFields).some(f => (f?.value ?? '') !== '')) {
+              patchData.append('specifications', serializeSpecifications());
+            }
+            if ([...patchData.keys()].length > 0) {
+              await fetch(`${BASE_URL}/product/${newId}`, {
+                method: 'PATCH',
+                body: patchData
+              });
+            }
+          } catch (e) {
+            console.error('Post-add patch failed:', e);
+          }
+        }
         await fetchProducts();
         setShowAddModal(false);
         resetForm();
@@ -798,10 +893,10 @@ const Products = ({ user }) => {
       cat_id: product.cat_id || '',
       cat_sub_id: product.cat_sub_id || '',
       brand: product.brand || '',
-      material: product.material || '',
       made_in: product.made_in || '',
       specification: product.specification || '',
       warranty: product.warranty || '',
+      gst: product.gst ?? '',
       seller_id: product.seller_id || SELLER_ID,
       color_id: product.color_id || '',
       finish_id: product.finish_id || '',
@@ -845,6 +940,43 @@ const Products = ({ user }) => {
       image_4: null,
       product_catalogue: null
     });
+    // Specifications (structured) prefill
+    try {
+      let specStr = product.specifications;
+      if (specStr) {
+        specStr = unescapeJsonString(specStr);
+        const specObj = JSON.parse(specStr);
+        const cat = specObj?.category || 'other';
+        const specs = specObj?.specifications || {};
+        setSpecCategory(cat);
+        const prefilled = {};
+        Object.keys(specs).forEach((name) => {
+          const item = specs[name] || {};
+          prefilled[name] = {
+            value: item.value || '',
+            unit: item.unit || ((SPEC_UNIT_OPTIONS[name] && SPEC_UNIT_OPTIONS[name][0]) || 'NONE')
+          };
+        });
+        // If category template exists but some fields missing, initialize them
+        const template = SPEC_TEMPLATES[cat] || [];
+        template.forEach((name) => {
+          if (!prefilled[name]) {
+            prefilled[name] = {
+              value: '',
+              unit: (SPEC_UNIT_OPTIONS[name] && SPEC_UNIT_OPTIONS[name][0]) || 'NONE'
+            };
+          }
+        });
+        setSpecFields(prefilled);
+      } else {
+        setSpecCategory('');
+        setSpecFields({});
+      }
+    } catch (e) {
+      console.error('Invalid specifications JSON:', e);
+      setSpecCategory('');
+      setSpecFields({});
+    }
     setFormErrors({});
     setShowAddModal(true);
     setShowViewModal(false);
@@ -867,11 +999,14 @@ const Products = ({ user }) => {
       formData.append('cat_id', parseInt(newProduct.cat_id));
       formData.append('cat_sub_id', parseInt(newProduct.cat_sub_id));
       formData.append('brand', newProduct.brand.trim());
-      formData.append('material', newProduct.material.trim());
       formData.append('made_in', newProduct.made_in.trim());
       formData.append('specification', newProduct.specification.trim());
       formData.append('warranty', newProduct.warranty.trim());
+      formData.append('gst', newProduct.gst === '' ? 0 : parseFloat(newProduct.gst));
       formData.append('seller_id', editingProduct.seller_id || SELLER_ID);
+      if (specCategory && Object.values(specFields).some(f => (f?.value ?? '') !== '')) {
+        formData.append('specifications', serializeSpecifications());
+      }
       if (newProduct.color_id) formData.append('color_id', parseInt(newProduct.color_id));
       if (newProduct.finish_id) formData.append('finish_id', parseInt(newProduct.finish_id));
       if (newProduct.material_id) formData.append('material_id', parseInt(newProduct.material_id));
@@ -967,9 +1102,24 @@ const Products = ({ user }) => {
   };
   const resetForm = () => {
     setNewProduct({
-      name: '', sku: '', status: 'Active', detail: '', pricing_tiers: '[]',
-      moq: 1, cat_id: '', cat_sub_id: '', brand: '', material: '', made_in: '',
-      specification: '', warranty: '', seller_id: SELLER_ID
+      name: '',
+      sku: '',
+      status: 'Active',
+      detail: '',
+      pricing_tiers: '[]',
+      moq: 1,
+      product_MRP: '',
+      cat_id: '',
+      cat_sub_id: '',
+      brand: '',
+      made_in: '',
+      specification: '',
+      warranty: '',
+      gst: '',
+      seller_id: SELLER_ID,
+      color_id: '',
+      finish_id: '',
+      material_id: ''
     });
     // ✅ FIX: Always start with a default empty tier row for easy editing
     setPricingTiers([{ min: '', price: '' }]);
@@ -1888,6 +2038,41 @@ const Products = ({ user }) => {
                     </div>
                   </div>
                   {viewingProduct.detail && (
+                    (() => {
+                      const raw = viewingProduct.specifications;
+                      if (!raw) return null;
+                      try {
+                        let s = unescapeJsonString(raw);
+                        const obj = JSON.parse(s);
+                        const specs = obj?.specifications || {};
+                        const keys = Object.keys(specs);
+                        if (keys.length === 0) return null;
+                        return (
+                          <div className="mt-4 bg-white p-5 rounded-xl shadow-md">
+                            <p className="text-sm font-bold text-gray-500 uppercase mb-3 flex items-center gap-2">
+                              <span className="text-lg">📐</span>
+                              Specifications ({obj?.category || 'N/A'})
+                            </p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              {keys.map((name) => {
+                                const item = specs[name] || {};
+                                return (
+                                  <div key={name} className="flex justify-between items-center bg-gray-50 p-2 rounded text-sm">
+                                    <span className="font-medium">{name}</span>
+                                    <span className="text-blue-700 font-bold">{(item.value ?? '')} {(item.unit ?? '')}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      } catch (e) {
+                        console.error('❌ Specifications parse error:', e);
+                        return null;
+                      }
+                    })()
+                  )}
+                  {viewingProduct.detail && (
                     <div className="mt-4 bg-white p-5 rounded-xl shadow-md">
                       <p className="text-sm font-bold text-gray-500 uppercase mb-3 flex items-center gap-2">
                         <span className="text-lg">📄</span>
@@ -2214,6 +2399,18 @@ const Products = ({ user }) => {
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">GST (%)</label>
+                    <input
+                      type="number"
+                      value={newProduct.gst}
+                      onChange={(e) => setNewProduct({ ...newProduct, gst: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      min="0"
+                      step="0.01"
+                      placeholder="e.g., 18"
+                    />
+                  </div>
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
                     <textarea
@@ -2231,6 +2428,57 @@ const Products = ({ user }) => {
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       rows="3"
                     />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Specifications Builder</label>
+                    <div className="bg-white border border-gray-200 rounded-lg p-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm text-gray-700 mb-2">Category</label>
+                          <select
+                            value={specCategory}
+                            onChange={(e) => initSpecFieldsForCategory(e.target.value)}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="">Select Category</option>
+                            <option value="sanitary">Sanitary</option>
+                            <option value="cp_fittings">CP Fittings</option>
+                            <option value="electrical">Electrical</option>
+                            <option value="hardware">Hardware</option>
+                            <option value="tools">Tools</option>
+                            <option value="safety">Safety</option>
+                            <option value="other">Other</option>
+                          </select>
+                        </div>
+                      </div>
+                      {specCategory && Object.keys(specFields).length > 0 && (
+                        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {Object.keys(specFields).map((name) => (
+                            <div key={name}>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">{name}</label>
+                              <div className="flex gap-3">
+                                <input
+                                  type="text"
+                                  value={specFields[name]?.value ?? ''}
+                                  onChange={(e) => setSpecValue(name, e.target.value)}
+                                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  placeholder="Enter value"
+                                />
+                                <select
+                                  value={specFields[name]?.unit ?? (SPEC_UNIT_OPTIONS[name]?.[0] || 'NONE')}
+                                  onChange={(e) => setSpecUnit(name, e.target.value)}
+                                  className="w-40 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                >
+                                  {(SPEC_UNIT_OPTIONS[name] || ['NONE']).map((u) => (
+                                    <option key={u} value={u}>{u}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
