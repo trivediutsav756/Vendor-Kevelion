@@ -43,6 +43,7 @@ const Products = ({ user }) => {
     detail: '',
     pricing_tiers: '[]',
     moq: 1,
+    product_MRP: '',
     cat_id: '',
     cat_sub_id: '',
     brand: '',
@@ -50,7 +51,11 @@ const Products = ({ user }) => {
     made_in: '',
     specification: '',
     warranty: '',
-    seller_id: ''
+    seller_id: '',
+    color_id: '',
+    finish_id: '',
+    material_id: '',
+    // country_id removed; use made_in dropdown instead
   });
   // Pricing Tiers State for UI - now with strings for empty defaults
   const [pricingTiers, setPricingTiers] = useState([]);
@@ -127,6 +132,39 @@ const Products = ({ user }) => {
     }
     return errors;
   };
+  // Dropdown data (colors, materials, finishes)
+  const [colorsList, setColorsList] = useState([]);
+  const [materialsList, setMaterialsList] = useState([]);
+  const [finishesList, setFinishesList] = useState([]);
+  const [countriesList, setCountriesList] = useState([]);
+  useEffect(() => {
+    const fetchList = async (url, setter) => {
+      try {
+        const res = await fetch(url);
+        if (!res.ok) return;
+        const data = await res.json();
+        const arr = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : [];
+        setter(arr);
+      } catch {}
+    };
+    fetchList(`${BASE_URL}/colors`, setColorsList);
+    fetchList(`${BASE_URL}/materials/`, setMaterialsList);
+    fetchList(`${BASE_URL}/finishes/`, setFinishesList);
+    (async () => {
+      try {
+        const res = await fetch(`${BASE_URL}/countries/`);
+        if (res.ok) {
+          const data = await res.json();
+          const arr = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : [];
+          setCountriesList(arr);
+        } else {
+          setCountriesList([{ id: 1, name: 'India' }]);
+        }
+      } catch {
+        setCountriesList([{ id: 1, name: 'India' }]);
+      }
+    })();
+  }, []);
   // ✅ ENHANCED BULK UPLOAD HANDLER
   const handleBulkUpload = async () => {
     const validationErrors = validateUploadFiles();
@@ -662,6 +700,9 @@ const Products = ({ user }) => {
     if (!newProduct.cat_id) errors.cat_id = 'Category is required';
     if (!newProduct.cat_sub_id) errors.cat_sub_id = 'Sub category is required';
     if (newProduct.moq < 1) errors.moq = 'MOQ must be at least 1';
+    if (!newProduct.product_MRP || parseFloat(newProduct.product_MRP) <= 0) {
+      errors.product_MRP = 'Product MRP is required and must be > 0';
+    }
     // Validate pricing tiers based on current UI state
     const pricingValidation = validatePricingTiers(pricingTiers);
     if (!pricingValidation.isValid) {
@@ -690,6 +731,7 @@ const Products = ({ user }) => {
       formData.append('detail', newProduct.detail.trim());
       formData.append('pricing_tiers', newProduct.pricing_tiers || '[]');
       formData.append('moq', parseInt(newProduct.moq) || 1);
+      formData.append('product_MRP', parseFloat(newProduct.product_MRP));
       formData.append('cat_id', parseInt(newProduct.cat_id));
       formData.append('cat_sub_id', parseInt(newProduct.cat_sub_id));
       formData.append('brand', newProduct.brand.trim());
@@ -698,6 +740,9 @@ const Products = ({ user }) => {
       formData.append('specification', newProduct.specification.trim());
       formData.append('warranty', newProduct.warranty.trim());
       formData.append('seller_id', SELLER_ID);
+      if (newProduct.color_id) formData.append('color_id', parseInt(newProduct.color_id));
+      if (newProduct.finish_id) formData.append('finish_id', parseInt(newProduct.finish_id));
+      if (newProduct.material_id) formData.append('material_id', parseInt(newProduct.material_id));
       if (imageFiles.f_image) formData.append('f_image', imageFiles.f_image);
       if (imageFiles.image_2) formData.append('image_2', imageFiles.image_2);
       if (imageFiles.image_3) formData.append('image_3', imageFiles.image_3);
@@ -749,6 +794,7 @@ const Products = ({ user }) => {
       detail: product.detail || '',
       pricing_tiers: product.pricing_tiers || '[]',
       moq: product.moq || 1,
+      product_MRP: product.product_MRP || '',
       cat_id: product.cat_id || '',
       cat_sub_id: product.cat_sub_id || '',
       brand: product.brand || '',
@@ -756,7 +802,11 @@ const Products = ({ user }) => {
       made_in: product.made_in || '',
       specification: product.specification || '',
       warranty: product.warranty || '',
-      seller_id: product.seller_id || SELLER_ID
+      seller_id: product.seller_id || SELLER_ID,
+      color_id: product.color_id || '',
+      finish_id: product.finish_id || '',
+      material_id: product.material_id || '',
+      country_id: product.country_id || ''
     });
     // Parse and set pricing tiers for UI - convert to strings
     let tiers = [];
@@ -813,6 +863,7 @@ const Products = ({ user }) => {
       formData.append('detail', newProduct.detail.trim());
       formData.append('pricing_tiers', newProduct.pricing_tiers || '[]');
       formData.append('moq', parseInt(newProduct.moq) || 1);
+      formData.append('product_MRP', parseFloat(newProduct.product_MRP));
       formData.append('cat_id', parseInt(newProduct.cat_id));
       formData.append('cat_sub_id', parseInt(newProduct.cat_sub_id));
       formData.append('brand', newProduct.brand.trim());
@@ -821,6 +872,9 @@ const Products = ({ user }) => {
       formData.append('specification', newProduct.specification.trim());
       formData.append('warranty', newProduct.warranty.trim());
       formData.append('seller_id', editingProduct.seller_id || SELLER_ID);
+      if (newProduct.color_id) formData.append('color_id', parseInt(newProduct.color_id));
+      if (newProduct.finish_id) formData.append('finish_id', parseInt(newProduct.finish_id));
+      if (newProduct.material_id) formData.append('material_id', parseInt(newProduct.material_id));
       if (imageFiles.f_image) formData.append('f_image', imageFiles.f_image);
       if (imageFiles.image_2) formData.append('image_2', imageFiles.image_2);
       if (imageFiles.image_3) formData.append('image_3', imageFiles.image_3);
@@ -947,6 +1001,25 @@ const Products = ({ user }) => {
     if (!subCategoryId) return 'N/A';
     const subCategory = subCategories.find(sub => sub && sub.id == subCategoryId);
     return subCategory ? subCategory.subcategory_name : 'N/A';
+  };
+  const getColorName = (colorId) => {
+    if (!colorId) return 'N/A';
+    const c = colorsList.find(x => x && x.id == colorId);
+    return c ? c.name : 'N/A';
+  };
+  const getMaterialNameById = (materialId) => {
+    if (!materialId) return 'N/A';
+    const m = materialsList.find(x => x && x.id == materialId);
+    return m ? m.name : 'N/A';
+  };
+  const getFinishName = (finishId) => {
+    if (!finishId) return 'N/A';
+    const f = finishesList.find(x => x && x.id == finishId);
+    return f ? f.name : 'N/A';
+  };
+  const getCountryName = (countryId) => {
+    if (!countryId) return 'N/A';
+    return String(countryId);
   };
   const getSellerName = (sellerId) => {
     return sellers[sellerId] || `Seller ${sellerId}`;
@@ -1698,11 +1771,21 @@ const Products = ({ user }) => {
                     </div>
                     <div className="bg-white p-4 rounded-xl shadow-md hover:shadow-xl transition-shadow">
                       <p className="text-xs font-bold text-gray-500 uppercase mb-2">🧵 Material</p>
-                      <p className="text-lg font-bold text-gray-900">{viewingProduct.material || 'N/A'}</p>
+                      <p className="text-lg font-bold text-gray-900">
+                        {getMaterialNameById(viewingProduct.material_id) || viewingProduct.material || 'N/A'}
+                      </p>
                     </div>
                     <div className="bg-white p-4 rounded-xl shadow-md hover:shadow-xl transition-shadow">
                       <p className="text-xs font-bold text-gray-500 uppercase mb-2">🌍 Made In</p>
                       <p className="text-lg font-bold text-gray-900">{viewingProduct.made_in || 'N/A'}</p>
+                    </div>
+                    <div className="bg-white p-4 rounded-xl shadow-md hover:shadow-xl transition-shadow">
+                      <p className="text-xs font-bold text-gray-500 uppercase mb-2">🎨 Color</p>
+                      <p className="text-lg font-bold text-gray-900">{getColorName(viewingProduct.color_id)}</p>
+                    </div>
+                    <div className="bg-white p-4 rounded-xl shadow-md hover:shadow-xl transition-shadow">
+                      <p className="text-xs font-bold text-gray-500 uppercase mb-2">✨ Finish</p>
+                      <p className="text-lg font-bold text-gray-900">{getFinishName(viewingProduct.finish_id)}</p>
                     </div>
                     <div className="bg-white p-4 rounded-xl shadow-md hover:shadow-xl transition-shadow">
                       <p className="text-xs font-bold text-gray-500 uppercase mb-2">📦 MOQ (Min. Order)</p>
@@ -1992,6 +2075,24 @@ const Products = ({ user }) => {
                       min="1"
                     />
                   </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Product MRP <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      value={newProduct.product_MRP}
+                      onChange={(e) => {
+                        setNewProduct({ ...newProduct, product_MRP: e.target.value });
+                        if (formErrors.product_MRP) setFormErrors({ ...formErrors, product_MRP: null });
+                      }}
+                      className={`w-full px-4 py-2 border ${formErrors.product_MRP ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                      min="0"
+                      step="0.01"
+                      placeholder="e.g., 999.99"
+                    />
+                    {formErrors.product_MRP && <p className="text-red-500 text-xs mt-1">{formErrors.product_MRP}</p>}
+                  </div>
                 </div>
               </div>
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
@@ -2042,27 +2143,68 @@ const Products = ({ user }) => {
                   </div>
                 </div>
               </div>
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <h3 className="text-lg font-semibold text-yellow-900 mb-4">Attributes</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Color</label>
+                  <select
+                    value={newProduct.color_id}
+                    onChange={(e) => setNewProduct({ ...newProduct, color_id: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select Color</option>
+                    {colorsList.map(c => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Material</label>
+                  <select
+                    value={newProduct.material_id}
+                    onChange={(e) => setNewProduct({ ...newProduct, material_id: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select Material</option>
+                    {materialsList.map(m => (
+                      <option key={m.id} value={m.id}>{m.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Finish</label>
+                  <select
+                    value={newProduct.finish_id}
+                    onChange={(e) => setNewProduct({ ...newProduct, finish_id: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select Finish</option>
+                    {finishesList.map(f => (
+                      <option key={f.id} value={f.id}>{f.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Made In</label>
+                  <select
+                    value={newProduct.made_in}
+                    onChange={(e) => setNewProduct({ ...newProduct, made_in: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select Country</option>
+                    {countriesList.map((c) => (
+                      <option key={c.id ?? c.name} value={c.name ?? c.country_name ?? c.title ?? ''}>
+                        {c.name ?? c.country_name ?? c.title ?? 'Unnamed'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
               <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
                 <h3 className="text-lg font-semibold text-purple-900 mb-4">Product Details</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Material</label>
-                    <input
-                      type="text"
-                      value={newProduct.material}
-                      onChange={(e) => setNewProduct({ ...newProduct, material: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Made In</label>
-                    <input
-                      type="text"
-                      value={newProduct.made_in}
-                      onChange={(e) => setNewProduct({ ...newProduct, made_in: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Warranty</label>
                     <input

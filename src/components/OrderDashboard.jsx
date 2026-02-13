@@ -151,19 +151,19 @@ const ShippingModal = ({
   useEffect(() => {
     if (!open) return;
     setForm({
-      courierName: initial?.courierName ?? '',
-      courierCompanyName: initial?.courierCompanyName ?? '',
-      courierMobile: initial?.courierMobile ?? '',
-      trackingNumber: initial?.trackingNumber ?? '',
-      shippingAddress: initial?.shippingAddress ?? '',
-      deliveryType: initial?.deliveryType ?? 'Standard',
-      totalWeight: Number(initial?.totalWeight ?? 0),
-      shippingCost: Number(initial?.shippingCost ?? 0),
-      shippingStatus: initial?.shippingStatus ?? 'Shipped',
+      courierName: initial?.courier_name ?? '',
+      courierCompanyName: initial?.courier_company_name ?? '',
+      courierMobile: initial?.courier_mobile ?? '',
+      trackingNumber: initial?.tracking_number ?? '',
+      shippingAddress: initial?.shipping_address ?? '',
+      deliveryType: initial?.delivery_type ?? 'Standard',
+      totalWeight: Number(initial?.total_weight ?? 0),
+      shippingCost: Number(initial?.shipping_cost ?? 0),
+      shippingStatus: initial?.shipping_status ?? 'Shipped',
       remarks: initial?.remarks ?? '',
-      estimatedDeliveryDate: isoToInput(initial?.estimatedDeliveryDate),
-      actualDeliveryDate: isoToInput(initial?.actualDeliveryDate),
-      cancelledDate: isoToInput(initial?.cancelledDate),
+      estimatedDeliveryDate: isoToInput(initial?.estimated_delivery_date),
+      actualDeliveryDate: isoToInput(initial?.actual_delivery_date),
+      cancelledDate: isoToInput(initial?.cancelled_date),
     });
   }, [open, initial]);
 
@@ -346,22 +346,31 @@ const OrderDashboard = ({ user }) => {
   const [shippingCtx, setShippingCtx] = useState({ orderId: null, buyerId: null, sellerId: null });
   const shippingCtxRef = useRef({ orderId: null, buyerId: null, sellerId: null });
 
-  const filterOptions = useMemo(() => ([
+  const filterOptions = [
     { value: 'all', label: 'All Orders', color: 'gray' },
-    { value: 'new', label: 'New Orders', color: 'blue' },
-    { value: 'pending', label: 'Pending Orders', color: 'yellow' },
-    { value: 'confirmed', label: 'Confirmed Orders', color: 'cyan' },
-    { value: 'shipped', label: 'Shipped Orders', color: 'purple' },
-    { value: 'delivered', label: 'Delivered Orders', color: 'green' },
-    { value: 'cancelled', label: 'Cancelled Orders', color: 'red' },
-    { value: 'returned', label: 'Returned Orders', color: 'orange' }
-  ]), []);
+    { value: 'new', label: 'New', color: 'blue' },
+    { value: 'pending', label: 'Pending', color: 'yellow' },
+    { value: 'confirmed', label: 'Confirmed', color: 'cyan' },
+    { value: 'shipped', label: 'Shipped', color: 'purple' },
+    { value: 'delivered', label: 'Delivered', color: 'green' },
+    { value: 'cancelled', label: 'Cancelled', color: 'red' },
+    { value: 'returned', label: 'Returned', color: 'orange' }
+  ];
 
   const orderTypeOptions = useMemo(() => ([
     { value: 'all', label: 'All Types', icon: '📦' },
     { value: 'Order', label: 'Orders', icon: '🛒' },
     { value: 'inquiry', label: 'Inquiries', icon: '❓' }
   ]), []);
+
+  const isPureNewOrder = (order) => {
+  if (!Array.isArray(order?.products) || order.products.length === 0) return false;
+
+  return order.products.every(
+    p => String(p.order_status || '').toLowerCase() === 'new'
+  );
+};
+
 
   const getOrderStatus = (order) => {
     if (!order?.products || order.products.length === 0) return 'New';
@@ -507,13 +516,26 @@ const OrderDashboard = ({ user }) => {
       setLoading(false);
     }
   };
+useEffect(() => {
+  let filtered = orders;
 
-  useEffect(() => {
-    let filtered = orders;
-    if (orderTypeFilter !== 'all') filtered = filtered.filter(o => o.order_type === orderTypeFilter);
-    if (statusFilter !== 'all') filtered = filtered.filter(o => getOrderStatus(o).toLowerCase() === statusFilter);
-    setFilteredOrders(filtered);
-  }, [statusFilter, orderTypeFilter, orders]);
+  if (orderTypeFilter !== 'all') {
+    filtered = filtered.filter(o => o.order_type === orderTypeFilter);
+  }
+
+  if (statusFilter !== 'all') {
+    if (statusFilter === 'new') {
+      filtered = filtered.filter(o => isPureNewOrder(o));
+    } else {
+      filtered = filtered.filter(
+        o => getOrderStatus(o).toLowerCase() === statusFilter
+      );
+    }
+  }
+
+  setFilteredOrders(filtered);
+}, [statusFilter, orderTypeFilter, orders]);
+
 
   const openShippingForOrder = async ({ orderId, buyerId, sellerId }) => {
     try {
@@ -592,27 +614,27 @@ const OrderDashboard = ({ user }) => {
       const lower = status.toLowerCase();
 
       // FORCE set date values when status requires it
-      const estimatedISO = inputToIso(form.estimated_delivery_date);
+      const estimatedISO = inputToIso(form.estimatedDeliveryDate);
       const actualISO =
         lower === 'delivered'
-          ? (inputToIso(form.actual_delivery_date) || nowIso())
-          : inputToIso(form.actual_delivery_date);
+          ? (inputToIso(form.actualDeliveryDate) || nowIso())
+          : inputToIso(form.actualDeliveryDate);
 
       const cancelledISO =
         lower === 'cancelled'
-          ? (inputToIso(form.cancelled_date) || nowIso())
-          : inputToIso(form.cancelled_date);
+          ? (inputToIso(form.cancelledDate) || nowIso())
+          : inputToIso(form.cancelledDate);
 
       // IMPORTANT: send BOTH spellings to avoid backend mismatch
       const patchPayload = {
-        courier_name: form.courier_name ?? '',
-        courier_company_name: form.courier_company_name ?? '',
-        courier_mobile: form.courier_mobile ?? '',
-        tracking_number: form.tracking_number ?? '',
-        shipping_address: form.shipping_address ?? '',
-        delivery_type: form.delivery_type ?? 'Standard',
-        total_weight: form.total_weight ?? 0,
-        shipping_cost: form.shipping_cost ?? 0,
+        courier_name: form.courierName ?? '',
+        courier_company_name: form.courierCompanyName ?? '',
+        courier_mobile: form.courierMobile ?? '',
+        tracking_number: form.trackingNumber ?? '',
+        shipping_address: form.shippingAddress ?? '',
+        delivery_type: form.deliveryType ?? 'Standard',
+        total_weight: form.totalWeight ?? 0,
+        shipping_cost: form.shippingCost ?? 0,
         shipping_status: status,
         remarks: form.remarks ?? '',
 
@@ -777,6 +799,36 @@ const OrderDashboard = ({ user }) => {
 
   const displayError = error && String(error).toLowerCase().includes('missing orderid/buyerid for shipping') ? null : error;
 
+  // Get status count for display in filter chips
+  const statusCounts = {
+    all: orders.length,
+   new: orders.filter(o => isPureNewOrder(o)).length,
+
+    pending: orders.filter(o => getOrderStatus(o).toLowerCase() === 'pending').length,
+    confirmed: orders.filter(o => getOrderStatus(o).toLowerCase() === 'confirmed').length,
+    shipped: orders.filter(o => getOrderStatus(o).toLowerCase() === 'shipped').length,
+    delivered: orders.filter(o => getOrderStatus(o).toLowerCase() === 'delivered').length,
+    cancelled: orders.filter(o => getOrderStatus(o).toLowerCase() === 'cancelled').length,
+    returned: orders.filter(o => getOrderStatus(o).toLowerCase() === 'returned').length,
+  };
+
+  // Function to get button color based on active state and status color
+  const getFilterButtonColor = (option, isActive) => {
+    if (!isActive) return 'bg-gray-100 text-gray-700 hover:bg-gray-200';
+
+    switch(option.color) {
+      case 'blue': return 'bg-blue-600 text-white shadow-lg';
+      case 'yellow': return 'bg-yellow-500 text-white shadow-lg';
+      case 'green': return 'bg-green-600 text-white shadow-lg';
+      case 'red': return 'bg-red-600 text-white shadow-lg';
+      case 'purple': return 'bg-purple-600 text-white shadow-lg';
+      case 'cyan': return 'bg-cyan-600 text-white shadow-lg';
+      case 'orange': return 'bg-orange-600 text-white shadow-lg';
+      case 'gray': return 'bg-gray-700 text-white shadow-lg';
+      default: return 'bg-gray-600 text-white shadow-lg';
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
@@ -827,24 +879,6 @@ const OrderDashboard = ({ user }) => {
                 <FiFilter className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
               </div>
 
-              <div className="relative">
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-medium"
-                >
-                  {filterOptions.map(option => {
-                    const count = option.value === 'all' ? stats.totalOrders : stats[`${option.value}Orders`] || 0;
-                    return (
-                      <option key={option.value} value={option.value}>
-                        {option.label} ({count})
-                      </option>
-                    );
-                  })}
-                </select>
-                <FiFilter className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-              </div>
-
               {(statusFilter !== 'all' || orderTypeFilter !== 'all') && (
                 <button
                   onClick={() => { setStatusFilter('all'); setOrderTypeFilter('all'); }}
@@ -857,6 +891,49 @@ const OrderDashboard = ({ user }) => {
             </div>
           </div>
         </div>
+
+        {/* Filter Chips - Status Tabs */}
+        <div className="bg-white rounded-lg shadow-lg p-4 mb-6">
+          <div className="flex flex-wrap gap-2">
+            {filterOptions.map(option => {
+              const count = option.value === 'all' ? statusCounts.all : statusCounts[option.value] || 0;
+              const isActive = statusFilter === option.value;
+
+              return (
+                <button
+                  key={option.value}
+                  onClick={() => setStatusFilter(option.value)}
+                  className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all transform hover:scale-105 ${getFilterButtonColor(option, isActive)}`}
+                >
+                  {option.label} ({count})
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Filter Info Banner */}
+        {(statusFilter !== 'all' || orderTypeFilter !== 'all') && (
+          <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FiFilter className="text-blue-600" />
+                <span className="text-blue-800 font-medium">
+                  Showing {filteredOrders.length} orders
+                  {statusFilter !== 'all' && ` filtered by ${filterOptions.find(f => f.value === statusFilter)?.label}`}
+                  {orderTypeFilter !== 'all' && statusFilter !== 'all' && ` and `}
+                  {orderTypeFilter !== 'all' && `${orderTypeOptions.find(o => o.value === orderTypeFilter)?.label}`}
+                </span>
+              </div>
+              <button
+                onClick={() => { setStatusFilter('all'); setOrderTypeFilter('all'); }}
+                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+              >
+                Clear Filters
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Error */}
         {displayError && (
@@ -872,6 +949,36 @@ const OrderDashboard = ({ user }) => {
         {loading && (
           <div className="flex justify-center items-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          </div>
+        )}
+
+        {/* Stats Cards */}
+        {!loading && orders.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
+            <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-blue-500">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600 text-sm font-medium">Total Orders</p>
+                  <p className="text-3xl font-bold text-gray-800 mt-1">{orders.length}</p>
+                </div>
+                <div className="bg-blue-100 p-3 rounded-full">
+                  <span className="text-2xl">📦</span>
+                </div>
+              </div>
+            </div>
+            <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-yellow-500">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600 text-sm font-medium">Pending Payment</p>
+                  <p className="text-3xl font-bold text-gray-800 mt-1">
+                    {orders.filter(o => getPaymentStatus(o).toLowerCase() === 'pending').length}
+                  </p>
+                </div>
+                <div className="bg-yellow-100 p-3 rounded-full">
+                  <span className="text-2xl">💰</span>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
@@ -911,11 +1018,14 @@ const OrderDashboard = ({ user }) => {
                           <td className="px-6 py-4 whitespace-nowrap"><span className="text-sm font-bold text-blue-600">#{order.id}</span></td>
                           <td className="px-6 py-4 whitespace-nowrap"><span className="text-sm text-gray-900">{formatDate(order.created_at)}</span></td>
                           <td className="px-6 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                            <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full cursor-pointer hover:opacity-80 transition-all ${getOrderTypeColor(currentType)}`}
+                            <button
+                              type="button"
                               onClick={() => updateOrderType(order.id, newOrderType)}
+                              className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full cursor-pointer hover:opacity-80 transition-all ${getOrderTypeColor(currentType)}`}
+                              title="Click to toggle order type"
                             >
                               {currentType}
-                            </span>
+                            </button>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap"><span className="text-sm text-gray-900 font-medium">{getBuyerName(order.buyer_id)} ID: {order.buyer_id}</span></td>
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -929,8 +1039,16 @@ const OrderDashboard = ({ user }) => {
                           <td className="px-6 py-4 whitespace-nowrap"><span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${getOrderStatusColor(orderStatus)}`}>{orderStatus}</span></td>
                           <td className="px-6 py-4 whitespace-nowrap"><span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPaymentStatusColor(paymentStatus)}`}>{paymentStatus || 'Not Set'}</span></td>
                           <td className="px-6 py-4 whitespace-nowrap text-center" onClick={(e) => e.stopPropagation()}>
-                            <button onClick={() => { setShowViewModal(true); setViewingOrder(order); }} className="p-2 text-blue-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors" disabled={loading}>
-                              View
+                            <button 
+                              onClick={() => { 
+                                setShowViewModal(true); 
+                                setViewingOrder(order); 
+                              }} 
+                              className="p-2 text-blue-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors" 
+                              disabled={loading}
+                              title="View Details"
+                            >
+                              👁️
                             </button>
                           </td>
                         </tr>
@@ -973,7 +1091,7 @@ const OrderDashboard = ({ user }) => {
                                           openShippingForOrder({ orderId: order.id, buyerId: order.buyer_id, sellerId: p.seller_id });
                                         }}
                                       >
-                                        Shipping
+                                        🚚 Shipping
                                       </button>
                                     </div>
                                   </div>
@@ -991,10 +1109,25 @@ const OrderDashboard = ({ user }) => {
           </div>
         )}
 
-        {!loading && filteredOrders.length === 0 && (
+        {!loading && filteredOrders.length === 0 && orders.length > 0 && (
           <div className="bg-white rounded-lg shadow-lg p-12 text-center">
+            <span className="text-6xl mb-4 block">🔍</span>
+            <h3 className="text-xl font-semibold text-gray-700 mb-2">No Matching Orders Found</h3>
+            <p className="text-gray-500 mb-4">No orders match the selected filters.</p>
+            <button
+              onClick={() => { setStatusFilter('all'); setOrderTypeFilter('all'); }}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Clear All Filters
+            </button>
+          </div>
+        )}
+
+        {!loading && orders.length === 0 && (
+          <div className="bg-white rounded-lg shadow-lg p-12 text-center">
+            <span className="text-6xl mb-4 block">📭</span>
             <h3 className="text-xl font-semibold text-gray-700 mb-2">No Orders Found</h3>
-            <p className="text-gray-500">No orders.</p>
+            <p className="text-gray-500">No orders available for this seller.</p>
           </div>
         )}
 
@@ -1106,7 +1239,6 @@ const OrderDashboard = ({ user }) => {
             </div>
           </div>
         )}
-
       </div>
     </div>
   );
